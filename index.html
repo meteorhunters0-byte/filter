@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منقي وترتيب أرقام الهواتف الدولية</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+        
+        <!-- العنوان -->
+        <h1 class="text-2xl font-bold text-gray-900 mb-2 text-center">معالج وفارز أرقام الهواتف الدولية</h1>
+        <p class="text-gray-500 text-center text-sm mb-6">استخراج وتنظيم أرقام الهواتف حسب مفتاح الدولة محلياً داخل متصفحك بأمان تام</p>
+
+        <!-- خيارات الإدخال -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- رفع ملف -->
+            <div class="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-blue-500 transition cursor-pointer flex flex-col items-center justify-center relative">
+                <input type="file" id="fileInput" accept=".txt" class="absolute inset-0 opacity-0 cursor-pointer">
+                <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <span class="text-sm font-medium text-gray-600">اختر ملف .txt أو اسحبه هنا</span>
+                <span id="fileName" class="text-xs text-blue-600 mt-1"></span>
+            </div>
+
+            <!-- لصق البيانات -->
+            <div>
+                <textarea id="pasteInput" placeholder="أو الصق البيانات هنا مباشرة..." class="w-full h-32 p-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 resize-none"></textarea>
+            </div>
+        </div>
+
+        <!-- أزرار التحكم -->
+        <div class="flex flex-wrap gap-3 justify-center mb-8">
+            <button onclick="processData()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition shadow-sm">بدء المعالجة</button>
+            <button onclick="clearAll()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-2.5 rounded-xl text-sm transition">مسح الكل</button>
+        </div>
+
+        <!-- قسم الإحصائيات والنتائج -->
+        <div id="resultsSection" class="hidden">
+            <div class="flex flex-wrap justify-between items-center bg-blue-50 p-4 rounded-xl mb-6">
+                <span id="totalCount" class="font-bold text-blue-900 text-sm">إجمالي الأرقام: 0</span>
+                <div class="flex gap-2 mt-2 sm:mt-0">
+                    <button onclick="copyAllResults()" class="bg-white hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold px-4 py-2 rounded-lg transition">نسخ جميع النتائج</button>
+                    <button onclick="downloadTxt()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">تنزيل كملف TXT</button>
+                </div>
+            </div>
+
+            <!-- حاويات الدول -->
+            <div id="countriesContainer" class="space-y-4"></div>
+        </div>
+
+    </div>
+
+    <!-- منطق المعالجة -->
+    <script>
+        // قراءة الملف المرفوع
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById('fileName').innerText = file.name;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                document.getElementById('pasteInput').value = evt.target.result;
+            };
+            reader.readAsText(file);
+        });
+
+        function clearAll() {
+            document.getElementById('pasteInput').value = '';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileName').innerText = '';
+            document.getElementById('resultsSection').classList.add('hidden');
+        }
+
+        // تحديد اسم المفتاح الدولي بناءً على الرموز المعروفة بدقة
+        function getCountryName(prefix) {
+            const map = {
+                '+1': 'أمريكا الشمالية / كندا / دول النطاق (+1)',
+                '+7': 'روسيا / كازاخستان (+7)',
+                '+20': 'مصر (+20)',
+                '+31': 'هولندا (+31)',
+                '+32': 'بلجيكا (+32)',
+                '+44': 'المملكة المتحدة (+44)',
+                '+90': 'تركيا (+90)',
+                '+92': 'باكستان (+92)',
+                '+94': 'سريلانكا (+94)',
+                '+98': 'إيران (+98)',
+                '+212': 'المغرب (+212)',
+                '+213': 'الجزائر (+213)',
+                '+216': 'تونس (+216)',
+                '+218': 'ليبيا (+218)',
+                '+260': 'زامبيا (+260)',
+                '+961': 'لبنان (+961)',
+                '+962': 'الأردن (+962)',
+                '+963': 'سوريا (+963)',
+                '+964': 'العراق (+964)',
+                '+965': 'الكويت (+965)',
+                '+966': 'المملكة العربية السعودية (+966)',
+                '+967': 'اليمن (+967)',
+                '+971': 'الإمارات العربية المتحدة (+971)',
+                '+972': 'مفتاح اتصال دولي (+972)',
+                '+973': 'البحرين (+973)',
+                '+974': 'قطر (+974)',
+                '+975': 'بوتان (+975)',
+                '+976': 'منغوليا (+976)',
+                '+977': 'نيبال (+977)'
+            };
+            return map[prefix] || `مفتاح دولي (${prefix})`;
+        }
+
+        function processData() {
+            const rawText = document.getElementById('pasteInput').value;
+            if (!rawText.trim()) {
+                alert('الرجاء إدخال بيانات أو رفع ملف أولاً.');
+                return;
+            }
+
+            // تقسيم النص إلى أسطر (معالجة لأكثر من 50 ألف سطر بكفاءة)
+            const lines = rawText.split(/\r?\n/);
+            const phoneRegex = /\+[\d\(\)\-\s]+/;
+            
+            const groupedNumbers = {};
+            let totalValid = 0;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if (!line) continue;
+
+                // البحث عن النمط الذي يبدأ بعلامة + ويحتوي على أرقام أو أقواس أو شرطات
+                let match = line.match(phoneRegex);
+                if (match) {
+                    let rawPhone = match[0].trim();
+                    
+                    // تنظيف الحواف فقط بدون المساس بالبنية الداخلية (مثل +1(343)3670835)
+                    rawPhone = rawPhone.replace(/[\s;,\*\#]+$/, '');
+
+                    // استخلاص أول أرقام بعد الـ + لتحديد المفتاح الدولي بدقة
+                    let digitsOnly = rawPhone.replace(/\D/g, '');
+                    let prefix = '';
+
+                    // تحديد المفتاح (الأطول أولاً لتجنب التداخل مثل +212 و +2)
+                    const knownPrefixes = ['+212', '+213', '+216', '+218', '+260', '+961', '+962', '+963', '+964', '+965', '+966', '+967', '+971', '+972', '+973', '+974', '+975', '+976', '+977', '+1', '+7', '+20', '+31', '+32', '+44', '+90', '+92', '+94', '+98'];
+                    
+                    // فحص مطابقة المفتاح من بداية النص
+                    for (let p of knownPrefixes) {
+                        if (rawPhone.startsWith(p)) {
+                            prefix = p;
+                            break;
+                        }
+                    }
+
+                    // إذا لم يتطابق مع القائمة، نأخذ أول 3 أو 4 أرقام بعد الـ + كافتراض آمن
+                    if (!prefix && digitsOnly.length >= 3) {
+                        prefix = '+' + digitsOnly.substring(0, 3);
+                    } else if (!prefix && digitsOnly.length >= 2) {
+                        prefix = '+' + digitsOnly.substring(0, 2);
+                    } else if (!prefix) {
+                        prefix = '+غير معروف';
+                    }
+
+                    if (!groupedNumbers[prefix]) {
+                        groupedNumbers[prefix] = [];
+                    }
+                    
+                    // منع التكرار العشوائي لنفس الرقم تماماً إن وجد مرتين
+                    if (!groupedNumbers[prefix].includes(rawPhone)) {
+                        groupedNumbers[prefix].push(rawPhone);
+                        totalValid++;
+                    }
+                }
+            }
+
+            renderResults(groupedNumbers, totalValid);
+        }
+
+        function renderResults(grouped, total) {
+            const section = document.getElementById('resultsSection');
+            const container = document.getElementById('countriesContainer');
+            document.getElementById('totalCount').innerText = `إجمالي الأرقام المستخرجة: ${total}`;
+            
+            container.innerHTML = '';
+            section.classList.remove('hidden');
+
+            // ترتيب المفاتيح تصاعدياً
+            const sortedKeys = Object.keys(grouped).sort();
+
+            sortedKeys.forEach(prefix => {
+                const numbers = grouped[prefix];
+                const countryLabel = getCountryName(prefix);
+
+                const card = document.createElement('div');
+                card.className = 'border border-gray-200 rounded-xl p-4 bg-white shadow-xs';
+                
+                let numbersListText = numbers.join('\n');
+
+                card.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-center mb-3">
+                        <span class="font-bold text-gray-700 text-sm">${countryLabel} <span class="text-gray-400 font-normal">(${numbers.length})</span></span>
+                        <button onclick="copyText(this, \`${btoa(encodeURIComponent(numbersListText))}\`)" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition">نسخ أرقام هذه المجموعة</button>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-lg text-xs font-mono text-gray-600 max-h-40 overflow-y-auto whitespace-pre-line select-all" dir="ltr">${numbersListText}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // دوال النسخ والتنزيل
+        function copyText(btn, base64Data) {
+            const text = decodeURIComponent(atob(base64Data));
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btn.innerText;
+                btn.innerText = 'تم النسخ بنجاح!';
+                btn.classList.add('bg-green-100', 'text-green-700');
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.classList.remove('bg-green-100', 'text-green-700');
+                }, 2000);
+            });
+        }
+
+        function copyAllResults() {
+            const codeBlocks = document.querySelectorAll('#countriesContainer .font-mono');
+            let allText = '';
+            codeBlocks.forEach(block => {
+                allText += block.innerText + '\n';
+            });
+            if (!allText.trim()) return;
+            navigator.clipboard.writeText(allText).then(() => {
+                alert('تم نسخ جميع النتائج بنجاح!');
+            });
+        }
+
+        function downloadTxt() {
+            const codeBlocks = document.querySelectorAll('#countriesContainer .font-mono');
+            let allText = '';
+            codeBlocks.forEach(block => {
+                allText += block.innerText + '\n';
+            });
+            if (!allText.trim()) return;
+
+            const blob = new Blob([allText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cleaned_phone_numbers.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
+

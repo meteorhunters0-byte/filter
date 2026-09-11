@@ -3,260 +3,1614 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+
     <title>منقي وترتيب أرقام الهواتف الدولية</title>
-    <!-- Tailwind CSS CDN -->
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- الخط -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Cairo', sans-serif;
+            background:
+                radial-gradient(circle at 10% 10%, rgba(59,130,246,.10), transparent 25%),
+                radial-gradient(circle at 90% 20%, rgba(14,165,233,.10), transparent 25%),
+                linear-gradient(135deg, #f8fafc, #eef2ff);
+            min-height: 100vh;
+        }
+
+        /* خلفية متحركة */
+        .background-orb {
+            position: fixed;
+            border-radius: 999px;
+            filter: blur(70px);
+            opacity: .35;
+            pointer-events: none;
+            z-index: -1;
+            animation: floatOrb 8s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 220px;
+            height: 220px;
+            background: #60a5fa;
+            top: -80px;
+            right: -50px;
+        }
+
+        .orb-2 {
+            width: 180px;
+            height: 180px;
+            background: #a78bfa;
+            bottom: 10%;
+            left: -70px;
+            animation-delay: 2s;
+        }
+
+        @keyframes floatOrb {
+            0%, 100% {
+                transform: translate(0, 0);
+            }
+            50% {
+                transform: translate(20px, 25px);
+            }
+        }
+
+        /* البطاقة الرئيسية */
+        .main-card {
+            background: rgba(255,255,255,.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow:
+                0 25px 70px rgba(15,23,42,.08),
+                0 5px 20px rgba(15,23,42,.04);
+        }
+
+        /* منطقة رفع الملف */
+        .upload-zone {
+            transition: all .25s ease;
+        }
+
+        .upload-zone:hover {
+            transform: translateY(-2px);
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .upload-zone.dragging {
+            transform: scale(1.01);
+            border-color: #2563eb;
+            background: #dbeafe;
+        }
+
+        /* أيقونة الرفع */
+        .upload-icon {
+            transition: all .3s ease;
+        }
+
+        .upload-zone:hover .upload-icon {
+            transform: translateY(-5px);
+        }
+
+        /* شاشة المعالجة */
+        #processingOverlay {
+            background: rgba(15,23,42,.72);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .loader-ring {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 7px solid rgba(255,255,255,.18);
+            border-top-color: #60a5fa;
+            border-right-color: #38bdf8;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .processing-pulse {
+            animation: processingPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes processingPulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.04);
+                opacity: .85;
+            }
+        }
+
+        /* شريط التقدم */
+        .progress-bar {
+            transition: width .18s ease;
+        }
+
+        .progress-shine {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-shine::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 80px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,.45),
+                transparent
+            );
+            animation: shine 1.3s linear infinite;
+        }
+
+        @keyframes shine {
+            from {
+                right: 100%;
+            }
+            to {
+                right: -100px;
+            }
+        }
+
+        /* ظهور النتائج */
+        .result-card {
+            animation: resultAppear .35s ease both;
+        }
+
+        @keyframes resultAppear {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* الرقم */
+        .number-box {
+            direction: ltr;
+            text-align: left;
+            font-family: monospace;
+        }
+
+        /* زر */
+        .action-btn {
+            transition: all .2s ease;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .action-btn:active {
+            transform: scale(.97);
+        }
+
+        /* شارة النجاح */
+        .success-check {
+            animation: successPop .45s ease both;
+        }
+
+        @keyframes successPop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1.15);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* إخفاء */
+        .hidden {
+            display: none !important;
+        }
+
+        /* تمرير النتائج */
+        .numbers-list {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+
+        /* على الهاتف */
+        @media (max-width: 640px) {
+            body {
+                padding: 10px;
+            }
+
+            .main-card {
+                border-radius: 20px;
+            }
+
+            .loader-ring {
+                width: 70px;
+                height: 70px;
+                border-width: 6px;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen p-4 md:p-8">
 
-    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
-        
-        <!-- العنوان -->
-        <h1 class="text-2xl font-bold text-gray-900 mb-2 text-center">معالج وفارز أرقام الهواتف الدولية</h1>
-        <p class="text-gray-500 text-center text-sm mb-6">استخراج وتنظيم أرقام الهواتف حسب مفتاح الدولة محلياً داخل متصفحك بأمان تام</p>
+<body class="text-slate-800">
 
-        <!-- خيارات الإدخال -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <!-- رفع ملف -->
-            <div class="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-blue-500 transition cursor-pointer flex flex-col items-center justify-center relative">
-                <input type="file" id="fileInput" accept=".txt" class="absolute inset-0 opacity-0 cursor-pointer">
-                <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                <span class="text-sm font-medium text-gray-600">اختر ملف .txt أو اسحبه هنا</span>
-                <span id="fileName" class="text-xs text-blue-600 mt-1"></span>
-            </div>
+    <!-- خلفية -->
+    <div class="background-orb orb-1"></div>
+    <div class="background-orb orb-2"></div>
 
-            <!-- لصق البيانات -->
-            <div>
-                <textarea id="pasteInput" placeholder="أو الصق البيانات هنا مباشرة..." class="w-full h-32 p-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 resize-none"></textarea>
-            </div>
-        </div>
+    <!-- شاشة المعالجة -->
+    <div id="processingOverlay"
+         class="hidden fixed inset-0 z-50 flex items-center justify-center p-5">
 
-        <!-- أزرار التحكم -->
-        <div class="flex flex-wrap gap-3 justify-center mb-8">
-            <button onclick="processData()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition shadow-sm">بدء المعالجة</button>
-            <button onclick="clearAll()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-2.5 rounded-xl text-sm transition">مسح الكل</button>
-        </div>
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-7 text-center">
 
-        <!-- قسم الإحصائيات والنتائج -->
-        <div id="resultsSection" class="hidden">
-            <div class="flex flex-wrap justify-between items-center bg-blue-50 p-4 rounded-xl mb-6">
-                <span id="totalCount" class="font-bold text-blue-900 text-sm">إجمالي الأرقام: 0</span>
-                <div class="flex gap-2 mt-2 sm:mt-0">
-                    <button onclick="copyAllResults()" class="bg-white hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold px-4 py-2 rounded-lg transition">نسخ جميع النتائج</button>
-                    <button onclick="downloadTxt()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">تنزيل كملف TXT</button>
+            <!-- دائرة التحميل -->
+            <div id="loadingAnimation"
+                 class="relative mx-auto w-fit mb-5 processing-pulse">
+
+                <div class="loader-ring"></div>
+
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-blue-600"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M12 4v16m8-8H4"/>
+                    </svg>
                 </div>
             </div>
 
-            <!-- حاويات الدول -->
-            <div id="countriesContainer" class="space-y-4"></div>
-        </div>
+            <!-- أيقونة النجاح -->
+            <div id="successAnimation"
+                 class="hidden success-check mx-auto mb-5 w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
 
+                <svg class="w-11 h-11 text-green-600"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+
+            <h2 id="processingTitle"
+                class="text-xl font-bold text-slate-900 mb-2">
+                جاري استخراج الأرقام
+            </h2>
+
+            <p id="processingText"
+               class="text-sm text-slate-500 mb-5">
+                يرجى الانتظار...
+            </p>
+
+            <!-- شريط التقدم -->
+            <div class="w-full bg-slate-100 rounded-full h-4 overflow-hidden mb-3">
+                <div id="progressBar"
+                     class="progress-bar progress-shine h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-500"
+                     style="width:0%">
+                </div>
+            </div>
+
+            <div class="flex justify-between text-xs font-semibold text-slate-500">
+                <span id="progressText">0%</span>
+                <span id="processedText">0 / 0</span>
+            </div>
+
+        </div>
     </div>
 
-    <!-- منطق المعالجة -->
-    <script>
-        // قراءة الملف المرفوع
-        document.getElementById('fileInput').addEventListener('change', function(e) {
+
+    <!-- المحتوى -->
+    <main class="max-w-5xl mx-auto py-5 md:py-10">
+
+        <div class="main-card rounded-3xl border border-white/70 overflow-hidden">
+
+            <!-- الرأس -->
+            <div class="relative px-5 md:px-10 pt-8 pb-7 text-center">
+
+                <div class="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold mb-4">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                    يعمل محليًا داخل المتصفح
+                </div>
+
+                <h1 class="text-2xl md:text-4xl font-extrabold text-slate-900 mb-3">
+                    منقي وترتيب أرقام الهواتف الدولية
+                </h1>
+
+                <p class="text-slate-500 text-sm md:text-base max-w-2xl mx-auto leading-7">
+                    استخراج وتنظيم أرقام الهواتف حسب مفتاح الدولة،
+                    مع معالجة البيانات محليًا داخل متصفحك.
+                </p>
+            </div>
+
+
+            <!-- الإدخال -->
+            <div class="px-5 md:px-10 pb-8">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                    <!-- رفع ملف -->
+                    <div id="uploadZone"
+                         class="upload-zone border-2 border-dashed border-slate-200 rounded-2xl p-7 text-center bg-slate-50/60 cursor-pointer flex flex-col items-center justify-center relative min-h-[190px]">
+
+                        <input type="file"
+                               id="fileInput"
+                               accept=".txt,text/plain"
+                               class="absolute inset-0 opacity-0 cursor-pointer">
+
+                        <div class="upload-icon w-16 h-16 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
+
+                            <svg class="w-8 h-8"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 viewBox="0 0 24 24">
+
+                                <path stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="2"
+                                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+
+                        </div>
+
+                        <span class="text-sm font-bold text-slate-700">
+                            اختر ملف TXT
+                        </span>
+
+                        <span class="text-xs text-slate-400 mt-1">
+                            أو اسحب الملف وأفلته هنا
+                        </span>
+
+                        <span id="fileName"
+                              class="text-xs font-semibold text-blue-600 mt-3 break-all">
+                        </span>
+
+                    </div>
+
+
+                    <!-- لصق -->
+                    <div class="relative">
+
+                        <textarea id="pasteInput"
+                                  placeholder="أو الصق البيانات هنا مباشرة..."
+                                  class="w-full h-full min-h-[190px] p-4 text-sm border-2 border-slate-200 rounded-2xl bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 resize-none transition"
+                                  spellcheck="false"></textarea>
+
+                        <div class="absolute bottom-3 left-3 text-[10px] text-slate-400 pointer-events-none">
+                            يدعم آلاف الأسطر
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- الأزرار -->
+                <div class="flex flex-wrap gap-3 justify-center mt-6">
+
+                    <button onclick="processData()"
+                            class="action-btn bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold px-8 py-3 rounded-xl text-sm shadow-lg shadow-blue-500/20">
+
+                        <span class="inline-flex items-center gap-2">
+
+                            <svg class="w-5 h-5"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="2"
+                                      d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+
+                            بدء المعالجة
+                        </span>
+
+                    </button>
+
+
+                    <button onclick="clearAll()"
+                            class="action-btn bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-7 py-3 rounded-xl text-sm">
+
+                        مسح الكل
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- النتائج -->
+            <div id="resultsSection"
+                 class="hidden border-t border-slate-100 bg-slate-50/50 px-5 md:px-10 py-8">
+
+                <!-- إحصائيات -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <div class="text-xs text-slate-400 mb-1">إجمالي الأرقام</div>
+                        <div id="totalCount"
+                             class="text-xl font-extrabold text-blue-700">
+                            0
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <div class="text-xs text-slate-400 mb-1">المجموعات</div>
+                        <div id="countryCount"
+                             class="text-xl font-extrabold text-indigo-700">
+                            0
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <div class="text-xs text-slate-400 mb-1">الأسطر المعالجة</div>
+                        <div id="lineCount"
+                             class="text-xl font-extrabold text-slate-700">
+                            0
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4">
+                        <div class="text-xs text-slate-400 mb-1">الحالة</div>
+                        <div class="text-xl font-extrabold text-green-600">
+                            مكتمل ✓
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <!-- شريط النتائج -->
+                <div class="flex flex-col md:flex-row gap-3 justify-between items-center bg-white border border-blue-100 rounded-2xl p-4 mb-6">
+
+                    <div class="flex items-center gap-2">
+
+                        <span class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></span>
+
+                        <span class="font-bold text-slate-800 text-sm">
+                            تم استخراج وتنظيم الأرقام
+                        </span>
+
+                    </div>
+
+
+                    <div class="flex flex-wrap justify-center gap-2">
+
+                        <button onclick="copyAllResults()"
+                                class="action-btn bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold px-4 py-2.5 rounded-xl">
+
+                            نسخ جميع النتائج
+
+                        </button>
+
+                        <button onclick="downloadTxt()"
+                                class="action-btn bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl">
+
+                            تنزيل TXT
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- حاويات الدول -->
+                <div id="countriesContainer"
+                     class="space-y-4">
+                </div>
+
+            </div>
+
+
+            <!-- تذييل -->
+            <div class="border-t border-slate-100 px-5 py-5 text-center bg-white/50">
+
+                <p class="text-xs text-slate-400">
+                    تتم معالجة البيانات داخل جهازك ولا يتم إرسال محتوى الملف إلى أي خادم.
+                </p>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+<script>
+
+    /* =========================================================
+       المتغيرات العامة
+    ========================================================= */
+
+    let lastGroupedNumbers = {};
+    let lastTotal = 0;
+
+
+    /* =========================================================
+       أسماء مفاتيح الدول
+    ========================================================= */
+
+    const countryMap = {
+
+        '+1': 'أمريكا الشمالية / كندا / دول النطاق (+1)',
+        '+7': 'روسيا / كازاخستان (+7)',
+        '+20': 'مصر (+20)',
+        '+31': 'هولندا (+31)',
+        '+32': 'بلجيكا (+32)',
+        '+33': 'فرنسا (+33)',
+        '+34': 'إسبانيا (+34)',
+        '+36': 'المجر (+36)',
+        '+39': 'إيطاليا (+39)',
+        '+40': 'رومانيا (+40)',
+        '+41': 'سويسرا (+41)',
+        '+43': 'النمسا (+43)',
+        '+44': 'المملكة المتحدة (+44)',
+        '+45': 'الدنمارك (+45)',
+        '+46': 'السويد (+46)',
+        '+47': 'النرويج (+47)',
+        '+48': 'بولندا (+48)',
+        '+49': 'ألمانيا (+49)',
+        '+51': 'بيرو (+51)',
+        '+52': 'المكسيك (+52)',
+        '+53': 'كوبا (+53)',
+        '+54': 'الأرجنتين (+54)',
+        '+55': 'البرازيل (+55)',
+        '+56': 'تشيلي (+56)',
+        '+57': 'كولومبيا (+57)',
+        '+58': 'فنزويلا (+58)',
+        '+60': 'ماليزيا (+60)',
+        '+61': 'أستراليا (+61)',
+        '+62': 'إندونيسيا (+62)',
+        '+63': 'الفلبين (+63)',
+        '+64': 'نيوزيلندا (+64)',
+        '+65': 'سنغافورة (+65)',
+        '+66': 'تايلاند (+66)',
+        '+81': 'اليابان (+81)',
+        '+82': 'كوريا الجنوبية (+82)',
+        '+84': 'فيتنام (+84)',
+        '+86': 'الصين (+86)',
+        '+90': 'تركيا (+90)',
+        '+91': 'الهند (+91)',
+        '+92': 'باكستان (+92)',
+        '+93': 'أفغانستان (+93)',
+        '+94': 'سريلانكا (+94)',
+        '+95': 'ميانمار (+95)',
+        '+98': 'إيران (+98)',
+
+        '+211': 'جنوب السودان (+211)',
+        '+212': 'المغرب (+212)',
+        '+213': 'الجزائر (+213)',
+        '+216': 'تونس (+216)',
+        '+218': 'ليبيا (+218)',
+        '+220': 'غامبيا (+220)',
+        '+221': 'السنغال (+221)',
+        '+222': 'موريتانيا (+222)',
+        '+223': 'مالي (+223)',
+        '+224': 'غينيا (+224)',
+        '+225': 'ساحل العاج (+225)',
+        '+226': 'بوركينا فاسو (+226)',
+        '+227': 'النيجر (+227)',
+        '+228': 'توجو (+228)',
+        '+229': 'بنين (+229)',
+        '+230': 'موريشيوس (+230)',
+        '+231': 'ليبيريا (+231)',
+        '+232': 'سيراليون (+232)',
+        '+233': 'غانا (+233)',
+        '+234': 'نيجيريا (+234)',
+        '+235': 'تشاد (+235)',
+        '+236': 'جمهورية أفريقيا الوسطى (+236)',
+        '+237': 'الكاميرون (+237)',
+        '+238': 'الرأس الأخضر (+238)',
+        '+239': 'ساو تومي وبرينسيب (+239)',
+        '+240': 'غينيا الاستوائية (+240)',
+        '+241': 'الغابون (+241)',
+        '+242': 'الكونغو (+242)',
+        '+243': 'جمهورية الكونغو الديمقراطية (+243)',
+        '+244': 'أنغولا (+244)',
+        '+245': 'غينيا بيساو (+245)',
+        '+248': 'سيشل (+248)',
+        '+249': 'السودان (+249)',
+        '+250': 'رواندا (+250)',
+        '+251': 'إثيوبيا (+251)',
+        '+252': 'الصومال (+252)',
+        '+253': 'جيبوتي (+253)',
+        '+254': 'كينيا (+254)',
+        '+255': 'تنزانيا (+255)',
+        '+256': 'أوغندا (+256)',
+        '+257': 'بوروندي (+257)',
+        '+258': 'موزمبيق (+258)',
+        '+260': 'زامبيا (+260)',
+        '+261': 'مدغشقر (+261)',
+        '+262': 'ريونيون / مايوت (+262)',
+        '+263': 'زيمبابوي (+263)',
+        '+264': 'ناميبيا (+264)',
+        '+265': 'مالاوي (+265)',
+        '+266': 'ليسوتو (+266)',
+        '+267': 'بوتسوانا (+267)',
+        '+268': 'إسواتيني (+268)',
+        '+269': 'جزر القمر (+269)',
+
+        '+290': 'سانت هيلينا (+290)',
+        '+291': 'إريتريا (+291)',
+        '+297': 'أروبا (+297)',
+        '+298': 'جزر فارو (+298)',
+        '+299': 'جرينلاند (+299)',
+
+        '+350': 'جبل طارق (+350)',
+        '+351': 'البرتغال (+351)',
+        '+352': 'لوكسمبورغ (+352)',
+        '+353': 'أيرلندا (+353)',
+        '+354': 'آيسلندا (+354)',
+        '+355': 'ألبانيا (+355)',
+        '+356': 'مالطا (+356)',
+        '+357': 'قبرص (+357)',
+        '+358': 'فنلندا (+358)',
+        '+359': 'بلغاريا (+359)',
+        '+370': 'ليتوانيا (+370)',
+        '+371': 'لاتفيا (+371)',
+        '+372': 'إستونيا (+372)',
+        '+373': 'مولدوفا (+373)',
+        '+374': 'أرمينيا (+374)',
+        '+375': 'بيلاروسيا (+375)',
+        '+376': 'أندورا (+376)',
+        '+377': 'موناكو (+377)',
+        '+378': 'سان مارينو (+378)',
+        '+380': 'أوكرانيا (+380)',
+        '+381': 'صربيا (+381)',
+        '+382': 'الجبل الأسود (+382)',
+        '+383': 'كوسوفو (+383)',
+        '+385': 'كرواتيا (+385)',
+        '+386': 'سلوفينيا (+386)',
+        '+387': 'البوسنة والهرسك (+387)',
+        '+389': 'مقدونيا الشمالية (+389)',
+
+        '+420': 'التشيك (+420)',
+        '+421': 'سلوفاكيا (+421)',
+        '+423': 'ليختنشتاين (+423)',
+
+        '+500': 'جزر فوكلاند (+500)',
+        '+501': 'بليز (+501)',
+        '+502': 'غواتيمالا (+502)',
+        '+503': 'السلفادور (+503)',
+        '+504': 'هندوراس (+504)',
+        '+505': 'نيكاراغوا (+505)',
+        '+506': 'كوستاريكا (+506)',
+        '+507': 'بنما (+507)',
+        '+509': 'هايتي (+509)',
+
+        '+590': 'جوادلوب / سان مارتن (+590)',
+        '+591': 'بوليفيا (+591)',
+        '+592': 'غيانا (+592)',
+        '+593': 'الإكوادور (+593)',
+        '+594': 'غويانا الفرنسية (+594)',
+        '+595': 'باراغواي (+595)',
+        '+596': 'مارتينيك (+596)',
+        '+597': 'سورينام (+597)',
+        '+598': 'أوروغواي (+598)',
+        '+599': 'الكاريبي الهولندي (+599)',
+
+        '+670': 'تيمور الشرقية (+670)',
+        '+673': 'بروناي (+673)',
+        '+674': 'ناورو (+674)',
+        '+675': 'بابوا غينيا الجديدة (+675)',
+        '+676': 'تونغا (+676)',
+        '+677': 'جزر سليمان (+677)',
+        '+678': 'فانواتو (+678)',
+        '+679': 'فيجي (+679)',
+        '+680': 'بالاو (+680)',
+        '+681': 'واليس وفوتونا (+681)',
+        '+682': 'جزر كوك (+682)',
+        '+683': 'نيوي (+683)',
+        '+685': 'ساموا (+685)',
+        '+686': 'كيريباس (+686)',
+        '+687': 'كاليدونيا الجديدة (+687)',
+        '+688': 'توفالو (+688)',
+        '+689': 'بولينيزيا الفرنسية (+689)',
+        '+690': 'توكيلَو (+690)',
+        '+691': 'ميكرونيزيا (+691)',
+        '+692': 'جزر مارشال (+692)',
+
+        '+850': 'كوريا الشمالية (+850)',
+        '+852': 'هونغ كونغ (+852)',
+        '+853': 'ماكاو (+853)',
+        '+855': 'كمبوديا (+855)',
+        '+856': 'لاوس (+856)',
+        '+880': 'بنغلاديش (+880)',
+        '+886': 'تايوان (+886)',
+
+        '+960': 'المالديف (+960)',
+        '+961': 'لبنان (+961)',
+        '+962': 'الأردن (+962)',
+        '+963': 'سوريا (+963)',
+        '+964': 'العراق (+964)',
+        '+965': 'الكويت (+965)',
+        '+966': 'المملكة العربية السعودية (+966)',
+        '+967': 'اليمن (+967)',
+        '+968': 'سلطنة عمان (+968)',
+        '+970': 'فلسطين (+970)',
+        '+971': 'الإمارات العربية المتحدة (+971)',
+        '+972': 'إسرائيل (+972)',
+        '+973': 'البحرين (+973)',
+        '+974': 'قطر (+974)',
+        '+975': 'بوتان (+975)',
+        '+976': 'منغوليا (+976)',
+        '+977': 'نيبال (+977)',
+        '+992': 'طاجيكستان (+992)',
+        '+993': 'تركمانستان (+993)',
+        '+994': 'أذربيجان (+994)',
+        '+995': 'جورجيا (+995)',
+        '+996': 'قيرغيزستان (+996)',
+        '+998': 'أوزبكستان (+998)'
+    };
+
+
+    /* =========================================================
+       المفاتيح مرتبة من الأطول إلى الأقصر
+       لمنع التداخل بين +1 و +12... إلخ
+    ========================================================= */
+
+    const knownPrefixes = Object.keys(countryMap)
+        .sort((a, b) => b.length - a.length);
+
+
+    /* =========================================================
+       تحديد اسم الدولة
+    ========================================================= */
+
+    function getCountryName(prefix) {
+
+        return countryMap[prefix] ||
+            `مفتاح دولي (${prefix})`;
+    }
+
+
+    /* =========================================================
+       تحديد المفتاح
+    ========================================================= */
+
+    function detectPrefix(rawPhone) {
+
+        const normalized = rawPhone
+            .replace(/\s/g, '')
+            .replace(/[().-]/g, '');
+
+        for (const prefix of knownPrefixes) {
+
+            const digits = prefix.substring(1);
+
+            if (
+                normalized.startsWith(prefix) ||
+                normalized.startsWith('00' + digits)
+            ) {
+                return prefix;
+            }
+        }
+
+        /*
+         * إذا لم يكن المفتاح معروفًا:
+         * نأخذ أول 3 أرقام بعد +
+         * كما كان في الكود الأصلي.
+         */
+
+        const digitsOnly = rawPhone.replace(/\D/g, '');
+
+        if (digitsOnly.length >= 3) {
+            return '+' + digitsOnly.substring(0, 3);
+        }
+
+        if (digitsOnly.length >= 2) {
+            return '+' + digitsOnly.substring(0, 2);
+        }
+
+        return '+غير معروف';
+    }
+
+
+    /* =========================================================
+       قراءة الملف
+    ========================================================= */
+
+    document.getElementById('fileInput')
+        .addEventListener('change', function(e) {
+
             const file = e.target.files[0];
+
             if (!file) return;
-            document.getElementById('fileName').innerText = file.name;
+
+            document.getElementById('fileName').innerText =
+                file.name;
+
             const reader = new FileReader();
+
             reader.onload = function(evt) {
-                document.getElementById('pasteInput').value = evt.target.result;
+
+                document.getElementById('pasteInput').value =
+                    evt.target.result;
             };
+
             reader.readAsText(file);
         });
 
-        function clearAll() {
-            document.getElementById('pasteInput').value = '';
-            document.getElementById('fileInput').value = '';
-            document.getElementById('fileName').innerText = '';
-            document.getElementById('resultsSection').classList.add('hidden');
+
+    /* =========================================================
+       Drag & Drop
+    ========================================================= */
+
+    const uploadZone =
+        document.getElementById('uploadZone');
+
+    uploadZone.addEventListener('dragover', function(e) {
+
+        e.preventDefault();
+
+        uploadZone.classList.add('dragging');
+
+    });
+
+    uploadZone.addEventListener('dragleave', function() {
+
+        uploadZone.classList.remove('dragging');
+
+    });
+
+    uploadZone.addEventListener('drop', function(e) {
+
+        e.preventDefault();
+
+        uploadZone.classList.remove('dragging');
+
+        const file = e.dataTransfer.files[0];
+
+        if (!file) return;
+
+        if (
+            !file.name.toLowerCase().endsWith('.txt') &&
+            file.type !== 'text/plain'
+        ) {
+
+            alert('الرجاء اختيار ملف TXT فقط.');
+
+            return;
         }
 
-        // تحديد اسم المفتاح الدولي بناءً على الرموز المعروفة بدقة
-        function getCountryName(prefix) {
-            const map = {
-                '+1': 'أمريكا الشمالية / كندا / دول النطاق (+1)',
-                '+7': 'روسيا / كازاخستان (+7)',
-                '+20': 'مصر (+20)',
-                '+31': 'هولندا (+31)',
-                '+32': 'بلجيكا (+32)',
-                '+44': 'المملكة المتحدة (+44)',
-                '+90': 'تركيا (+90)',
-                '+92': 'باكستان (+92)',
-                '+94': 'سريلانكا (+94)',
-                '+98': 'إيران (+98)',
-                '+212': 'المغرب (+212)',
-                '+213': 'الجزائر (+213)',
-                '+216': 'تونس (+216)',
-                '+218': 'ليبيا (+218)',
-                '+260': 'زامبيا (+260)',
-                '+961': 'لبنان (+961)',
-                '+962': 'الأردن (+962)',
-                '+963': 'سوريا (+963)',
-                '+964': 'العراق (+964)',
-                '+965': 'الكويت (+965)',
-                '+966': 'المملكة العربية السعودية (+966)',
-                '+967': 'اليمن (+967)',
-                '+971': 'الإمارات العربية المتحدة (+971)',
-                '+972': 'مفتاح اتصال دولي (+972)',
-                '+973': 'البحرين (+973)',
-                '+974': 'قطر (+974)',
-                '+975': 'بوتان (+975)',
-                '+976': 'منغوليا (+976)',
-                '+977': 'نيبال (+977)'
-            };
-            return map[prefix] || `مفتاح دولي (${prefix})`;
+        document.getElementById('fileInput').files =
+            e.dataTransfer.files;
+
+        document.getElementById('fileName').innerText =
+            file.name;
+
+        const reader = new FileReader();
+
+        reader.onload = function(evt) {
+
+            document.getElementById('pasteInput').value =
+                evt.target.result;
+        };
+
+        reader.readAsText(file);
+    });
+
+
+    /* =========================================================
+       مسح الكل
+    ========================================================= */
+
+    function clearAll() {
+
+        document.getElementById('pasteInput').value = '';
+
+        document.getElementById('fileInput').value = '';
+
+        document.getElementById('fileName').innerText = '';
+
+        document.getElementById('resultsSection')
+            .classList.add('hidden');
+
+        lastGroupedNumbers = {};
+        lastTotal = 0;
+
+        document.getElementById('countriesContainer')
+            .innerHTML = '';
+    }
+
+
+    /* =========================================================
+       شاشة المعالجة
+    ========================================================= */
+
+    function showProcessing(totalLines) {
+
+        const overlay =
+            document.getElementById('processingOverlay');
+
+        overlay.classList.remove('hidden');
+
+        document.getElementById('loadingAnimation')
+            .classList.remove('hidden');
+
+        document.getElementById('successAnimation')
+            .classList.add('hidden');
+
+        document.getElementById('processingTitle')
+            .innerText = 'جاري استخراج الأرقام';
+
+        document.getElementById('processingText')
+            .innerText = 'جاري تحليل البيانات وتنظيم الأرقام...';
+
+        document.getElementById('progressBar')
+            .style.width = '0%';
+
+        document.getElementById('progressText')
+            .innerText = '0%';
+
+        document.getElementById('processedText')
+            .innerText = `0 / ${totalLines}`;
+    }
+
+
+    /* =========================================================
+       تحديث شاشة المعالجة
+    ========================================================= */
+
+    function updateProgress(processed, total) {
+
+        const percent =
+            total > 0
+                ? Math.floor((processed / total) * 100)
+                : 100;
+
+        document.getElementById('progressBar')
+            .style.width = percent + '%';
+
+        document.getElementById('progressText')
+            .innerText = percent + '%';
+
+        document.getElementById('processedText')
+            .innerText = `${processed.toLocaleString()} / ${total.toLocaleString()}`;
+
+        document.getElementById('processingText')
+            .innerText =
+                `جاري تحليل ${processed.toLocaleString()} من ${total.toLocaleString()} سطر...`;
+    }
+
+
+    /* =========================================================
+       إظهار الاكتمال
+    ========================================================= */
+
+    function finishProcessing(total) {
+
+        document.getElementById('progressBar')
+            .style.width = '100%';
+
+        document.getElementById('progressText')
+            .innerText = '100%';
+
+        document.getElementById('processedText')
+            .innerText =
+                `${total.toLocaleString()} / ${total.toLocaleString()}`;
+
+        document.getElementById('loadingAnimation')
+            .classList.add('hidden');
+
+        document.getElementById('successAnimation')
+            .classList.remove('hidden');
+
+        document.getElementById('processingTitle')
+            .innerText = 'اكتملت المعالجة بنجاح';
+
+        document.getElementById('processingText')
+            .innerText = 'تم استخراج وتنظيم أرقام الهواتف بنجاح.';
+
+        setTimeout(function() {
+
+            document.getElementById('processingOverlay')
+                .classList.add('hidden');
+
+        }, 850);
+    }
+
+
+    /* =========================================================
+       المعالجة الرئيسية
+    ========================================================= */
+
+    function processData() {
+
+        const rawText =
+            document.getElementById('pasteInput').value;
+
+        if (!rawText.trim()) {
+
+            alert('الرجاء إدخال بيانات أو رفع ملف أولاً.');
+
+            return;
         }
 
-        function processData() {
-            const rawText = document.getElementById('pasteInput').value;
-            if (!rawText.trim()) {
-                alert('الرجاء إدخال بيانات أو رفع ملف أولاً.');
-                return;
-            }
 
-            // تقسيم النص إلى أسطر (معالجة لأكثر من 50 ألف سطر بكفاءة)
-            const lines = rawText.split(/\r?\n/);
-            const phoneRegex = /\+[\d\(\)\-\s]+/;
-            
+        const lines =
+            rawText.split(/\r?\n/);
+
+        const totalLines = lines.length;
+
+        showProcessing(totalLines);
+
+
+        /*
+         * نستخدم setTimeout حتى تظهر شاشة المعالجة
+         * قبل بدء العملية الثقيلة.
+         */
+
+        setTimeout(function() {
+
             const groupedNumbers = {};
+
+            /*
+             * Set أسرع بكثير في منع التكرار
+             */
+            const uniqueSets = {};
+
             let totalValid = 0;
 
-            for (let i = 0; i < lines.length; i++) {
-                let line = lines[i].trim();
-                if (!line) continue;
+            let processed = 0;
 
-                // البحث عن النمط الذي يبدأ بعلامة + ويحتوي على أرقام أو أقواس أو شرطات
-                let match = line.match(phoneRegex);
-                if (match) {
-                    let rawPhone = match[0].trim();
-                    
-                    // تنظيف الحواف فقط بدون المساس بالبنية الداخلية (مثل +1(343)3670835)
-                    rawPhone = rawPhone.replace(/[\s;,\*\#]+$/, '');
 
-                    // استخلاص أول أرقام بعد الـ + لتحديد المفتاح الدولي بدقة
-                    let digitsOnly = rawPhone.replace(/\D/g, '');
-                    let prefix = '';
+            /*
+             * Regex مرن للأرقام التي تبدأ بـ +
+             */
+            const phoneRegex =
+                /\+\d[\d().\-\s]*/;
 
-                    // تحديد المفتاح (الأطول أولاً لتجنب التداخل مثل +212 و +2)
-                    const knownPrefixes = ['+212', '+213', '+216', '+218', '+260', '+961', '+962', '+963', '+964', '+965', '+966', '+967', '+971', '+972', '+973', '+974', '+975', '+976', '+977', '+1', '+7', '+20', '+31', '+32', '+44', '+90', '+92', '+94', '+98'];
-                    
-                    // فحص مطابقة المفتاح من بداية النص
-                    for (let p of knownPrefixes) {
-                        if (rawPhone.startsWith(p)) {
-                            prefix = p;
-                            break;
-                        }
-                    }
 
-                    // إذا لم يتطابق مع القائمة، نأخذ أول 3 أو 4 أرقام بعد الـ + كافتراض آمن
-                    if (!prefix && digitsOnly.length >= 3) {
-                        prefix = '+' + digitsOnly.substring(0, 3);
-                    } else if (!prefix && digitsOnly.length >= 2) {
-                        prefix = '+' + digitsOnly.substring(0, 2);
-                    } else if (!prefix) {
-                        prefix = '+غير معروف';
-                    }
+            /*
+             * تقسيم العمل إلى دفعات
+             * حتى لا تتجمد الصفحة مع الملفات الكبيرة.
+             */
+
+            const chunkSize = 1000;
+
+
+            function processChunk() {
+
+                const end =
+                    Math.min(
+                        processed + chunkSize,
+                        totalLines
+                    );
+
+
+                for (; processed < end; processed++) {
+
+                    let line =
+                        lines[processed].trim();
+
+                    if (!line) continue;
+
+
+                    let match =
+                        line.match(phoneRegex);
+
+                    if (!match) continue;
+
+
+                    let rawPhone =
+                        match[0].trim();
+
+
+                    /*
+                     * تنظيف الحواف فقط،
+                     * مع الحفاظ على بنية الرقم الداخلية.
+                     */
+
+                    rawPhone =
+                        rawPhone.replace(
+                            /[\s;,*#]+$/,
+                            ''
+                        );
+
+
+                    if (!rawPhone) continue;
+
+
+                    const prefix =
+                        detectPrefix(rawPhone);
+
 
                     if (!groupedNumbers[prefix]) {
+
                         groupedNumbers[prefix] = [];
+
+                        uniqueSets[prefix] =
+                            new Set();
                     }
-                    
-                    // منع التكرار العشوائي لنفس الرقم تماماً إن وجد مرتين
-                    if (!groupedNumbers[prefix].includes(rawPhone)) {
-                        groupedNumbers[prefix].push(rawPhone);
+
+
+                    /*
+                     * منع التكرار بكفاءة
+                     */
+
+                    if (
+                        !uniqueSets[prefix]
+                            .has(rawPhone)
+                    ) {
+
+                        uniqueSets[prefix]
+                            .add(rawPhone);
+
+                        groupedNumbers[prefix]
+                            .push(rawPhone);
+
                         totalValid++;
                     }
                 }
+
+
+                updateProgress(
+                    processed,
+                    totalLines
+                );
+
+
+                if (processed < totalLines) {
+
+                    setTimeout(
+                        processChunk,
+                        0
+                    );
+
+                } else {
+
+                    /*
+                     * حفظ النتائج
+                     */
+
+                    lastGroupedNumbers =
+                        groupedNumbers;
+
+                    lastTotal =
+                        totalValid;
+
+
+                    renderResults(
+                        groupedNumbers,
+                        totalValid,
+                        totalLines
+                    );
+
+
+                    finishProcessing(
+                        totalLines
+                    );
+                }
             }
 
-            renderResults(groupedNumbers, totalValid);
-        }
 
-        function renderResults(grouped, total) {
-            const section = document.getElementById('resultsSection');
-            const container = document.getElementById('countriesContainer');
-            document.getElementById('totalCount').innerText = `إجمالي الأرقام المستخرجة: ${total}`;
-            
-            container.innerHTML = '';
-            section.classList.remove('hidden');
+            processChunk();
 
-            // ترتيب المفاتيح تصاعدياً
-            const sortedKeys = Object.keys(grouped).sort();
+        }, 50);
+    }
 
-            sortedKeys.forEach(prefix => {
-                const numbers = grouped[prefix];
-                const countryLabel = getCountryName(prefix);
 
-                const card = document.createElement('div');
-                card.className = 'border border-gray-200 rounded-xl p-4 bg-white shadow-xs';
-                
-                let numbersListText = numbers.join('\n');
+    /* =========================================================
+       عرض النتائج
+    ========================================================= */
 
-                card.innerHTML = `
-                    <div class="flex flex-wrap justify-between items-center mb-3">
-                        <span class="font-bold text-gray-700 text-sm">${countryLabel} <span class="text-gray-400 font-normal">(${numbers.length})</span></span>
-                        <button onclick="copyText(this, \`${btoa(encodeURIComponent(numbersListText))}\`)" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition">نسخ أرقام هذه المجموعة</button>
-                    </div>
-                    <div class="bg-gray-50 p-3 rounded-lg text-xs font-mono text-gray-600 max-h-40 overflow-y-auto whitespace-pre-line select-all" dir="ltr">${numbersListText}</div>
-                `;
-                container.appendChild(card);
-            });
-        }
+    function renderResults(
+        grouped,
+        total,
+        totalLines
+    ) {
 
-        // دوال النسخ والتنزيل
-        function copyText(btn, base64Data) {
-            const text = decodeURIComponent(atob(base64Data));
-            navigator.clipboard.writeText(text).then(() => {
-                const originalText = btn.innerText;
-                btn.innerText = 'تم النسخ بنجاح!';
-                btn.classList.add('bg-green-100', 'text-green-700');
-                setTimeout(() => {
-                    btn.innerText = originalText;
-                    btn.classList.remove('bg-green-100', 'text-green-700');
+        const section =
+            document.getElementById(
+                'resultsSection'
+            );
+
+        const container =
+            document.getElementById(
+                'countriesContainer'
+            );
+
+
+        document.getElementById(
+            'totalCount'
+        ).innerText =
+            total.toLocaleString();
+
+
+        document.getElementById(
+            'countryCount'
+        ).innerText =
+            Object.keys(grouped)
+                .length
+                .toLocaleString();
+
+
+        document.getElementById(
+            'lineCount'
+        ).innerText =
+            totalLines.toLocaleString();
+
+
+        container.innerHTML = '';
+
+        section.classList.remove('hidden');
+
+
+        /*
+         * ترتيب المفاتيح تصاعديًا رقميًا
+         */
+
+        const sortedKeys =
+            Object.keys(grouped)
+                .sort(function(a, b) {
+
+                    const na =
+                        parseInt(
+                            a.replace(/\D/g, '')
+                        ) || 999999;
+
+                    const nb =
+                        parseInt(
+                            b.replace(/\D/g, '')
+                        ) || 999999;
+
+                    return na - nb;
+                });
+
+
+        sortedKeys.forEach(function(prefix, index) {
+
+            const numbers =
+                grouped[prefix];
+
+            const countryLabel =
+                getCountryName(prefix);
+
+
+            const card =
+                document.createElement('div');
+
+
+            card.className =
+                'result-card border border-slate-200 rounded-2xl p-4 bg-white shadow-sm';
+
+
+            /*
+             * نضع البيانات في data attribute
+             * بدل وضعها مباشرة داخل onclick.
+             * هذا أكثر أمانًا مع النصوص الطويلة.
+             */
+
+            const header =
+                document.createElement('div');
+
+            header.className =
+                'flex flex-wrap justify-between items-center gap-3 mb-3';
+
+
+            const title =
+                document.createElement('div');
+
+            title.className =
+                'flex items-center gap-2';
+
+
+            const dot =
+                document.createElement('span');
+
+            dot.className =
+                'w-3 h-3 rounded-full bg-blue-500';
+
+
+            const titleText =
+                document.createElement('span');
+
+            titleText.className =
+                'font-bold text-slate-700 text-sm';
+
+            titleText.innerText =
+                countryLabel;
+
+
+            const count =
+                document.createElement('span');
+
+            count.className =
+                'text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-lg';
+
+            count.innerText =
+                numbers.length.toLocaleString();
+
+
+            title.appendChild(dot);
+
+            title.appendChild(titleText);
+
+            title.appendChild(count);
+
+
+            const copyButton =
+                document.createElement('button');
+
+            copyButton.className =
+                'action-btn bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl';
+
+            copyButton.innerText =
+                'نسخ أرقام هذه المجموعة';
+
+
+            copyButton.onclick =
+                function() {
+
+                    copyGroup(
+                        numbers.join('\n'),
+                        copyButton
+                    );
+                };
+
+
+            header.appendChild(title);
+
+            header.appendChild(copyButton);
+
+
+            const numberBox =
+                document.createElement('div');
+
+            numberBox.className =
+                'number-box numbers-list bg-slate-50 border border-slate-100 p-3 rounded-xl text-xs text-slate-600 max-h-52 overflow-y-auto whitespace-pre-line select-all';
+
+            numberBox.innerText =
+                numbers.join('\n');
+
+
+            card.appendChild(header);
+
+            card.appendChild(numberBox);
+
+            container.appendChild(card);
+        });
+    }
+
+
+    /* =========================================================
+       نسخ مجموعة
+    ========================================================= */
+
+    function copyGroup(text, button) {
+
+        navigator.clipboard.writeText(text)
+            .then(function() {
+
+                const original =
+                    button.innerText;
+
+                button.innerText =
+                    'تم النسخ ✓';
+
+                button.classList.add(
+                    'bg-green-100',
+                    'text-green-700'
+                );
+
+                setTimeout(function() {
+
+                    button.innerText =
+                        original;
+
+                    button.classList.remove(
+                        'bg-green-100',
+                        'text-green-700'
+                    );
+
+                }, 2000);
+
+            })
+            .catch(function() {
+
+                fallbackCopy(text);
+
+                button.innerText =
+                    'تم النسخ ✓';
+
+                setTimeout(function() {
+
+                    button.innerText =
+                        'نسخ أرقام هذه المجموعة';
+
                 }, 2000);
             });
-        }
+    }
 
-        function copyAllResults() {
-            const codeBlocks = document.querySelectorAll('#countriesContainer .font-mono');
-            let allText = '';
-            codeBlocks.forEach(block => {
-                allText += block.innerText + '\n';
-            });
-            if (!allText.trim()) return;
-            navigator.clipboard.writeText(allText).then(() => {
-                alert('تم نسخ جميع النتائج بنجاح!');
-            });
-        }
 
-        function downloadTxt() {
-            const codeBlocks = document.querySelectorAll('#countriesContainer .font-mono');
-            let allText = '';
-            codeBlocks.forEach(block => {
-                allText += block.innerText + '\n';
-            });
-            if (!allText.trim()) return;
+    /* =========================================================
+       دالة النسخ الاحتياطية
+    ========================================================= */
 
-            const blob = new Blob([allText], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'cleaned_phone_numbers.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-    </script>
+    function fallbackCopy(text) {
+
+        const textarea =
+            document.createElement('textarea');
+
+        textarea.value = text;
+
+        textarea.style.position =
+            'fixed';
+
+        textarea.style.opacity = '0';
+
+        document.body.appendChild(textarea);
+
+        textarea.select();
+
+        document.execCommand('copy');
+
+        textarea.remove();
+    }
+
+
+    /* =========================================================
+       نسخ جميع النتائج
+    ========================================================= */
+
+    function copyAllResults() {
+
+        const groups =
+            lastGroupedNumbers;
+
+        let allText = '';
+
+
+        const sortedKeys =
+            Object.keys(groups)
+                .sort(function(a, b) {
+
+                    return (
+                        (parseInt(a.replace(/\D/g, '')) || 999999) -
+                        (parseInt(b.replace(/\D/g, '')) || 999999)
+                    );
+                });
+
+
+        sortedKeys.forEach(function(prefix) {
+
+            allText +=
+                groups[prefix].join('\n');
+
+            allText += '\n';
+
+        });
+
+
+        if (!allText.trim()) return;
+
+
+        navigator.clipboard
+            .writeText(allText.trim())
+            .then(function() {
+
+                alert(
+                    'تم نسخ جميع النتائج بنجاح!'
+                );
+
+            })
+            .catch(function() {
+
+                fallbackCopy(
+                    allText.trim()
+                );
+
+                alert(
+                    'تم نسخ جميع النتائج بنجاح!'
+                );
+            });
+    }
+
+
+    /* =========================================================
+       تنزيل TXT
+    ========================================================= */
+
+    function downloadTxt() {
+
+        const groups =
+            lastGroupedNumbers;
+
+        let allText = '';
+
+
+        const sortedKeys =
+            Object.keys(groups)
+                .sort(function(a, b) {
+
+                    return (
+                        (parseInt(a.replace(/\D/g, '')) || 999999) -
+                        (parseInt(b.replace(/\D/g, '')) || 999999)
+                    );
+                });
+
+
+        sortedKeys.forEach(function(prefix) {
+
+            allText +=
+                groups[prefix].join('\n');
+
+            allText += '\n';
+
+        });
+
+
+        if (!allText.trim()) return;
+
+
+        const blob =
+            new Blob(
+                [allText.trim() + '\n'],
+                {
+                    type:
+                        'text/plain;charset=utf-8'
+                }
+            );
+
+
+        const url =
+            URL.createObjectURL(blob);
+
+
+        const a =
+            document.createElement('a');
+
+        a.href = url;
+
+        a.download =
+            'cleaned_phone_numbers.txt';
+
+
+        document.body.appendChild(a);
+
+        a.click();
+
+        document.body.removeChild(a);
+
+
+        URL.revokeObjectURL(url);
+    }
+
+</script>
+
 </body>
 </html>
-
